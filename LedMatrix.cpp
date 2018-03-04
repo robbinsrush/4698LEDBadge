@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include "LedMatrix.h"
-#include "cp437font.h"
+#include "gfxfont.h"
 
 /**
  * Heavily influenced by the code and the blog posts from https://github.com/nickgammon/MAX7219_Dot_Matrix
@@ -44,7 +44,7 @@ void LedMatrix::sendByte (const byte device, const byte reg, const byte data) {
     // enable the line
     digitalWrite(mySlaveSelectPin,LOW);
     // now shift out the data
-    for(int i=0;i<myNumberOfDevices;i++) {
+    for(int i = myNumberOfDevices-1; i >= 0; i--){
         SPI.transfer (spiregister[i]);
         SPI.transfer (spidata[i]);
     }
@@ -53,7 +53,7 @@ void LedMatrix::sendByte (const byte device, const byte reg, const byte data) {
 }
 
 void LedMatrix::sendByte (const byte reg, const byte data) {
-    for(byte device = 0; device < myNumberOfDevices; device++) {
+    for(byte device = myNumberOfDevices-1; device > 0; device--) {
         sendByte(device, reg, data);
     }
 }
@@ -148,7 +148,7 @@ void LedMatrix::drawText() {
         for (byte col = 0; col < 8; col++) {
             position = i * myCharWidth + col + myTextOffset + myTextAlignmentOffset;
             if (position >= 0 && position < myNumberOfDevices * 8) {
-                setColumn(position, pgm_read_byte (&cp437_font [letter] [col]));
+                setColumn(position, pgm_read_byte (&gfx_font [letter] [col]));
             }
         }
     }
