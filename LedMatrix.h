@@ -128,7 +128,7 @@ private:
     int increment = -1;
     byte myNumberOfDevices = 0;
     byte mySlaveSelectPin = 0;
-    byte myCharWidth = 7;
+    byte myCharWidth = 6;
     byte myTextAlignment = 1;
     
     void calculateTextAlignmentOffset();
