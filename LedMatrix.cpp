@@ -59,7 +59,9 @@ void LedMatrix::sendByte (const byte reg, const byte data) {
 }
 
 void LedMatrix::setIntensity(const byte intensity) {
-    sendByte(MAX7219_REG_INTENSITY, intensity);
+    for(byte device = 0; device < myNumberOfDevices; device++) {
+        sendByte (device, MAX7219_REG_INTENSITY, intensity);   // character intensity: range: 0 to 15
+    }
 }
 
 void LedMatrix::setCharWidth(byte charWidth) {
