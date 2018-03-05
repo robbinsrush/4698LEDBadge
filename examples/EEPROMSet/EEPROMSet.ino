@@ -5,6 +5,7 @@ struct Config_t
   char badgeText[41];
   int intensity;
   int scrollSpeed;
+  int scrollDirection;
 };
 
 void setup() {
@@ -12,7 +13,8 @@ void setup() {
   Config_t settings = {
     "YOUR TEXT HERE",
     0,
-    50
+    50,
+    0
   };
 
   EEPROM.put(1, settings);
