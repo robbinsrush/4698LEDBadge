@@ -5,6 +5,7 @@ struct Config_t
   char badgeText[41];
   int intensity;
   int scrollSpeed;
+  int scrollDirection;
 };
 
 void setup() {
