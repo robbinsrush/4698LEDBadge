@@ -1,9 +1,8 @@
 #include <SPI.h>
 #include "LedMatrix.h"
+#define NUMBER_OF_DEVICES 2
+#define CS_PIN D8
 
-
-#define NUMBER_OF_DEVICES 6
-#define CS_PIN 2
 LedMatrix ledMatrix = LedMatrix(NUMBER_OF_DEVICES, CS_PIN);
 int x = 0;
   
@@ -15,7 +14,6 @@ void setup() {
 }
 
 void loop() {
-
   ledMatrix.clear();
   ledMatrix.scrollTextLeft();
   ledMatrix.drawText();
