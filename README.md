@@ -44,5 +44,6 @@ For battery operation:
 - Autodesk (for the software used for the 3D model)
 - JLCPCB/EasyEDA (for the PCB and Schematic)
 - Wemos (for the D1 mini)
+- [Github User Squix78 for the original library used](https://github.com/squix78/MAX7219LedMatrix)
 - Me! 
 
