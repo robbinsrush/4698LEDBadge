@@ -22,7 +22,7 @@ Todo
 Todo
 
 ## Parts
-- 1x Custom PCB (designed by your truly)
+- 1x Custom PCB (designed by your truly) (Gerbers in repo and [here at EasyEDA](https://easyeda.com/nullstalgia/Badge_THT_and_MAX-0fb6900ba40b4741a26781ce35c9b7fa))
 - 1x Wemos D1 Mini
 - 1x or 4x pushbuttons (6x6mm) (as of writing, only 1 is in use in my code, but if you write your own code you can use the rest)
 - 2x 32mmx32mm 8x8 LED Matrix units. (Model I used: 1088AS)
