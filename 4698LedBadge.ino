@@ -33,6 +33,8 @@ struct Config_t {
   int intensity;
   // The delay between each frame of text.
   int scrollSpeed;
+  //Currently unused but may be in future. Better have it just so I don't break future code and badges.
+  int scrollDirection;
 } settings;
 
 // ^ and nicely initialized for use globally.
@@ -173,6 +175,7 @@ void saveSettings(String badgeText, String intensity, String speed) {
   // And same goes to the ints.
   settings.intensity = intensityInt;
   settings.scrollSpeed = speedInt;
+  settings.scrollDirection = 0;
 
   // Open up EEPROM.
   EEPROM.begin(EEPROMSize);
@@ -246,7 +249,7 @@ void setup(void)
   if (!digitalRead(D2)) {
     setupBool = true;
   }
-  
+
   // We open up serial
   Serial.begin(115200);
   Serial.end();
@@ -266,7 +269,7 @@ void setup(void)
     server.on("/", handleRoot);
     server.onNotFound(handleNotFound);
     server.begin();
-    
+
   } else {
     // But if we're just being a badge, we turn off WiFi entirely (saves battery and bandwidth around the world.) <3
     WiFi.mode(WIFI_OFF);
@@ -290,9 +293,6 @@ void setup(void)
   }
 }
 
-// Most of this is taken from
-// https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/example-sketch-ap-web-server
-
 // Ran during setup()
 void setupWiFi() {
   // boot up our AP
@@ -311,7 +311,7 @@ void setupWiFi() {
   // not my idea
   char AP_NameChar[AP_NameString.length() + 1];
   memset(AP_NameChar, 0, AP_NameString.length() + 1);
-  
+
   for (int i = 0; i < AP_NameString.length(); i++)
     AP_NameChar[i] = AP_NameString.charAt(i);
 
@@ -330,7 +330,7 @@ void loop(void)
     dnsServer.processNextRequest();
     server.handleClient();
     /*
-     * This was going to be used to change the text from "Wifi name and pass.... waiting..." to showing the IP, but I decided to just combine it with a bunch of spaces for simplicity's sake
+       This was going to be used to change the text from "Wifi name and pass.... waiting..." to showing the IP, but I decided to just combine it with a bunch of spaces for simplicity's sake
       if(WiFi.softAPgetStationNum() > 0){
       ledMatrix.setNextText("URL: 192.168.4.1");
       }*/
@@ -343,13 +343,13 @@ void loop(void)
     delay(50);
   } else {
     // The while is just so our chip doesn't check a bool that isn't going to change.
-    while(true){
-    ledMatrix.clear();
-    ledMatrix.scrollTextLeft();
-    ledMatrix.drawText();
-    ledMatrix.commit();
-    // The user-chosen delay.
-    delay(settings.scrollSpeed);
+    while (true) {
+      ledMatrix.clear();
+      ledMatrix.scrollTextLeft();
+      ledMatrix.drawText();
+      ledMatrix.commit();
+      // The user-chosen delay.
+      delay(settings.scrollSpeed);
     }
   }
 }
