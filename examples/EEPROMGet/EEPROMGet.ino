@@ -17,6 +17,7 @@ void setup() {
   Serial.println(settings.badgeText);
   Serial.println(settings.intensity);
   Serial.println(settings.scrollSpeed);
+  Serial.println(settings.scrollDirection);
   EEPROM.end();
 }
 
