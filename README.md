@@ -1,4 +1,4 @@
-# 4698LEDBadge
+# Team4698Badge
 ## Designed and programmed by Rush Robbins
 ![3D Model of Badge](https://i.imgur.com/V3JbVzn.png)
 
