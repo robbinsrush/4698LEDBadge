@@ -278,6 +278,10 @@ void setup(void)
 
   // Now, if we're setting stuff up...
   if (setupBool) {
+    // Turn on onboard LED to indicate setup mode
+    pinMode(D4, OUTPUT);
+    digitalWrite(D4, LOW);
+    
     // Set up our captive portal
     dnsServer.start(DNS_PORT, "*", apIP);
     // The rest of the WiFi booting
