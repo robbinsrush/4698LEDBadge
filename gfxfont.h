@@ -2,7 +2,7 @@
 // bit patterns for the Adafruit GFX font
 // Copyright (c) 2012 Adafruit Industries.  All rights reserved.
 
-const byte gfx_font [][8] PROGMEM = {
+const byte gfx_font [][5] PROGMEM = {
 	{0x00, 0x00, 0x00, 0x00, 0x00},
 	{0x3E, 0x5B, 0x4F, 0x5B, 0x3E},
 	{0x3E, 0x6B, 0x4F, 0x6B, 0x3E},
