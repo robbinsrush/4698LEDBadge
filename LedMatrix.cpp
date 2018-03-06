@@ -28,6 +28,7 @@ void LedMatrix::init() {
         sendByte (device, MAX7219_REG_INTENSITY, 0);   // character intensity: range: 0 to 15
         sendByte (device, MAX7219_REG_SHUTDOWN, 1);    // not in shutdown mode (ie. start it up)
     }
+    letterSize = sizeof(gfx_font[0]);
 }
 
 void LedMatrix::sendByte (const byte device, const byte reg, const byte data) {
@@ -48,8 +49,7 @@ void LedMatrix::sendByte (const byte device, const byte reg, const byte data) {
         SPI.transfer (spiregister[i]);
         SPI.transfer (spidata[i]);
     }
-    digitalWrite (mySlaveSelectPin, HIGH);
-    
+    digitalWrite (mySlaveSelectPin, HIGH);   
 }
 
 void LedMatrix::sendByte (const byte reg, const byte data) {
@@ -76,17 +76,17 @@ void LedMatrix::setTextAlignment(byte textAlignment) {
 void LedMatrix::calculateTextAlignmentOffset() {
     switch(myTextAlignment) {
         case TEXT_ALIGN_LEFT:
-            myTextAlignmentOffset = 0;
-            break;
+        myTextAlignmentOffset = 0;
+        break;
         case TEXT_ALIGN_LEFT_END:
-            myTextAlignmentOffset = myNumberOfDevices * 8;
-            break;
+        myTextAlignmentOffset = myNumberOfDevices * 8;
+        break;
         case TEXT_ALIGN_RIGHT:
-            myTextAlignmentOffset = myText.length() * myCharWidth - myNumberOfDevices * 8;
-            break;
+        myTextAlignmentOffset = myText.length() * myCharWidth - myNumberOfDevices * 8;
+        break;
         case TEXT_ALIGN_RIGHT_END:
-            myTextAlignmentOffset = - myText.length() * myCharWidth;
-            break;
+        myTextAlignmentOffset = - myText.length() * myCharWidth;
+        break;
     }
     
 }
@@ -99,8 +99,13 @@ void LedMatrix::clear() {
 }
 
 void LedMatrix::commit() {
-    for (byte col = 0; col < myNumberOfDevices * 8; col++) {
-        sendByte(col / 8, col % 8 + 1, cols[col]);
+    int max = myNumberOfDevices * 8;
+    for (byte col = 0; col < max; col++) {
+        if(upsideDown){
+            sendByte(col / 8, col % 8 + 1, cols[(max-1)-col]);
+        } else {
+            sendByte(col / 8, col % 8 + 1, cols[col]);
+        }
     }
 }
 
@@ -114,8 +119,24 @@ void LedMatrix::setNextText(String nextText) {
     myNextText = nextText;
 }
 
+String LedMatrix::reverseString(String toRev){
+    int length = toRev.length();
+    String reversed = toRev;
+
+    for (int i = 0; i < length; i++){
+      reversed[i] = toRev[(length-1)-i];
+  }
+  return reversed;
+}
+
 void LedMatrix::scrollTextRight() {
-    myTextOffset = (myTextOffset + 1) % ((int)myText.length() * myCharWidth - 5);
+    //myTextOffset = (myTextOffset + 1) % ((int)myText.length() * myCharWidth - 5);
+    myTextOffset = (myTextOffset + 1) % ((int)myText.length() * myCharWidth + myNumberOfDevices * 8);
+    if (myTextOffset == 0 && myNextText.length() > 0) {
+        myText = myNextText;
+        myNextText = "";
+        calculateTextAlignmentOffset();
+    }
 }
 
 void LedMatrix::scrollTextLeft() {
@@ -147,10 +168,14 @@ void LedMatrix::drawText() {
     int position = 0;
     for (int i = 0; i < myText.length(); i++) {
         letter = myText.charAt(i);
-        for (byte col = 0; col < 8; col++) {
+        for (byte col = 0; col < letterSize; col++) {
             position = i * myCharWidth + col + myTextOffset + myTextAlignmentOffset;
             if (position >= 0 && position < myNumberOfDevices * 8) {
-                setColumn(position, pgm_read_byte (&gfx_font [letter] [col]));
+                if (false){
+                    setColumn(position, pgm_read_byte (&gfx_font [letter] [(letterSize-1)-col]));
+                } else {
+                    setColumn(position, pgm_read_byte (&gfx_font [letter] [col]));
+                }
             }
         }
     }
@@ -160,9 +185,20 @@ void LedMatrix::setColumn(int column, byte value) {
     if (column < 0 || column >= myNumberOfDevices * 8) {
         return;
     }
+
+    if(upsideDown){
+        // http://forum.arduino.cc/index.php?topic=54304.msg388532#msg388532
+        value = ((value * 0x0802LU & 0x22110LU) | (value * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+    }
+    
     cols[column] = value;
 }
 
 void LedMatrix::setPixel(byte x, byte y, bool state) {
     bitWrite(cols[x], y, state);
+}
+
+void LedMatrix::setUpsideDown(bool state){
+    upsideDown = state;
+    //setTextAlignment(1);
 }
