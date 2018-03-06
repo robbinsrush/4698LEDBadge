@@ -13,6 +13,10 @@ The library used can do the following:
 - scroll text left or right 
 - oscillate text between the two ends
 
+## Video Demonstration
+
+https://streamable.com/58ed7
+
 ## Usage
 
 1. Assemble the PCB (tutorial coming later?)
