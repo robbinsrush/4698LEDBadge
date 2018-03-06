@@ -171,11 +171,7 @@ void LedMatrix::drawText() {
         for (byte col = 0; col < letterSize; col++) {
             position = i * myCharWidth + col + myTextOffset + myTextAlignmentOffset;
             if (position >= 0 && position < myNumberOfDevices * 8) {
-                if (false){
-                    setColumn(position, pgm_read_byte (&gfx_font [letter] [(letterSize-1)-col]));
-                } else {
-                    setColumn(position, pgm_read_byte (&gfx_font [letter] [col]));
-                }
+                setColumn(position, pgm_read_byte (&gfx_font [letter] [col]));
             }
         }
     }
