@@ -67,9 +67,9 @@ public:
     void sendByte (const byte reg, const byte data);
     
     /**
-     * Turn on pixel at position (x,y).
+     * Change pixel at position (x,y), default on (as to not break old code)
      */
-    void setPixel(byte x, byte y);
+    void setPixel(byte x, byte y, bool state=true);
     
     /**
      * Clear the frame buffer.
