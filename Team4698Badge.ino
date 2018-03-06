@@ -20,6 +20,7 @@ LedMatrix ledMatrix = LedMatrix(NUMBER_OF_DEVICES, CS_PIN);
 
 bool setupBool = false;
 static const int EEPROMSize = 256;
+int absDirection;
 
 // Alright, let's get commenty
 
@@ -33,7 +34,11 @@ struct Config_t {
   int intensity;
   // The delay between each frame of text.
   int scrollSpeed;
-  //Currently unused but may be in future. Better have it just so I don't break future code and badges.
+  // Direction and orientation of the text
+  // Modes:
+  // 0 & 1: left to right
+  // 2: right to left
+  // -1 & -2: same as their above counterparts, but upside down
   int scrollDirection;
 } settings;
 
@@ -93,6 +98,13 @@ const char INDEX_HTML[] =
   "<OPTION value=\"50\">90%</OPTION>"
   "<OPTION value=\"30\">100%</OPTION>"
   "</SELECT><br><br>"
+  "Text Direction<br>"
+  "<SELECT name=\"direction\">"
+  "<OPTION value=\"1\">Left to Right</OPTION>"
+  "<OPTION value=\"2\">Right to Left</OPTION>"
+  "</SELECT><br><br>"
+  "Upside Down<br>"
+  "<INPUT type=\"checkbox\" name=\"upsideDown\" value=\"yes\"/><br><br><br>"
   "<INPUT type=\"submit\" value=\"Save!\">"
   "</P>"
   "</FORM>"
@@ -146,7 +158,7 @@ void handleSubmit()
   Serial.println(server.arg("badgeText"));
   // #3. If it's not empty, go ahead and send it over to the save function
   if (server.arg("badgeText") != "") {
-    saveSettings(server.arg("badgeText"), server.arg("intensity"), server.arg("speed"));
+    saveSettings(server.arg("badgeText"), server.arg("intensity"), server.arg("speed"), server.arg("direction"), server.arg("upsideDown"));
     // After saving, let the user know all is good.
     server.send(200, "text/html", SUCCESS_HTML);
   }
@@ -158,15 +170,21 @@ void handleSubmit()
 
 
 // Yay, time to save stuff to the ESP's EEPROM
-void saveSettings(String badgeText, String intensity, String speed) {
+void saveSettings(String badgeText, String intensity, String speed, String direction, String upsideDown) {
   // Turn our badgeText string into a char array
   char badgeTextChar[badgeTextSize];
   badgeText.toCharArray(badgeTextChar, badgeTextSize);
 
   // Turn our strings into ints.
-  int intensityInt, speedInt;
+  int intensityInt, speedInt, directionInt;
   intensityInt = intensity.toInt();
   speedInt = speed.toInt();
+  directionInt = direction.toInt();
+
+  // If upside down, turn it negative to notify the sketch later
+  if (upsideDown == "yes") {
+    directionInt = directionInt * -1;
+  }
 
   // And character by character, put every char from our local to our global char Array.
   for (int i = 0; i < badgeTextSize; i++) {
@@ -175,7 +193,7 @@ void saveSettings(String badgeText, String intensity, String speed) {
   // And same goes to the ints.
   settings.intensity = intensityInt;
   settings.scrollSpeed = speedInt;
-  settings.scrollDirection = 0;
+  settings.scrollDirection = directionInt;
 
   // Open up EEPROM.
   EEPROM.begin(EEPROMSize);
@@ -278,6 +296,21 @@ void setup(void)
       // If they were, set the brightness and text to be shown
       ledMatrix.setText(settings.badgeText);
       ledMatrix.setIntensity(settings.intensity);
+
+      // If the scroll direction is negative, we know it's meant to be shown upside down.
+      if (settings.scrollDirection < 0) {
+        ledMatrix.setUpsideDown(true);
+      }
+
+      // Get an absolute so we can check just one variable here and in loop()
+      absDirection = abs(settings.scrollDirection);
+
+      if (absDirection == 2) {
+        // If it's meant to be right to left, put the text in a suitable spot to be scrolled
+        ledMatrix.setTextAlignment(3);
+      }
+
+
       // Delay is done in the loop()
     } else {
       // But if our OK flag was false, then have our display say that it needs to be set up.
@@ -343,9 +376,15 @@ void loop(void)
     delay(50);
   } else {
     // The while is just so our chip doesn't check a bool that isn't going to change.
+    Serial.println(absDirection);
     while (true) {
       ledMatrix.clear();
-      ledMatrix.scrollTextLeft();
+
+      if (absDirection == 0 || absDirection == 1) {
+        ledMatrix.scrollTextLeft();
+      } else {
+        ledMatrix.scrollTextRight();
+      }
       ledMatrix.drawText();
       ledMatrix.commit();
       // The user-chosen delay.
