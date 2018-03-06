@@ -67,7 +67,7 @@ public:
     void sendByte (const byte reg, const byte data);
     
     /**
-     * Change pixel at position (x,y), default on (as to not break old code)
+     * Change pixel at position (x,y), default on
      */
     void setPixel(byte x, byte y, bool state=true);
     
@@ -116,6 +116,11 @@ public:
      * Oscilate the text between the two limits.
      */
     void oscillateText();
+
+    /**
+     * Allows the programmer to change the upsidedown state. False (default) == right side up.
+     */
+    void setUpsideDown(bool state);
     
 private:
     byte* cols;
@@ -130,6 +135,9 @@ private:
     byte mySlaveSelectPin = 0;
     byte myCharWidth = 6;
     byte myTextAlignment = 1;
+    byte letterSize = 0;
+    bool upsideDown = false;
     
     void calculateTextAlignmentOffset();
+    String reverseString(String toRev);
 };
