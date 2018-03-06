@@ -11,7 +11,6 @@ struct Config_t
 void setup() {
   EEPROM.begin(256);
   Serial.begin(115200);
-  Serial.end();
   Config_t settings;
   EEPROM.get(1, settings);
   Serial.println(EEPROM.read(0));
