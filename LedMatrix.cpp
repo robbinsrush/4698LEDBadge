@@ -191,7 +191,11 @@ void LedMatrix::setColumn(int column, byte value) {
 }
 
 void LedMatrix::setPixel(byte x, byte y, bool state) {
-    bitWrite(cols[x], y, state);
+    if(upsideDown){
+        bitWrite(cols[x], 7-y, state);
+    } else {
+        bitWrite(cols[x], y, state);
+    }
 }
 
 void LedMatrix::setUpsideDown(bool state){
