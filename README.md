@@ -38,7 +38,7 @@ https://streamable.com/58ed7
 - On v1 (current) of the PCB, R is on D4 (GPIO2), which is also the onboard_led pin. Pushing it lights the LED. No adverse effects have been found yet. 
 - Several inputs for 5V and 3.3V are put around the board to allow for easier access for batteries and the like. ([example shown here](https://i.imgur.com/4QV5dsC.png))
 - As of writing, only 1 pushbutton (B) is in use in my code, but if you write your own code you can use the rest just fine
-- A chain or similar length of material can be threaded through the large holes at the very top of the PCB **and are connected to circuit ground.**
+- A ball-chain necklace or similar length of material can be threaded through the large holes at the very top of the PCB **and are connected to circuit ground.** [Example image](https://i.imgur.com/z4SjA52.jpg)
 ## Parts
 - 1x Custom PCB (designed by your truly) (Gerbers in repo and [here at EasyEDA](https://easyeda.com/nullstalgia/Badge_THT_and_MAX-0fb6900ba40b4741a26781ce35c9b7fa))
 - 1x Wemos D1 Mini
@@ -51,7 +51,11 @@ https://streamable.com/58ed7
 
 For battery operation:
 
-- ***TODO HELP PLS***
+- For the batch I am making, I am using a single 18650 battery cell and a charge/protect/boost circuit. I am also using a 100k resistor instead of the regular 30k to save on current draw in exchange for brightness (not as important in indoor conditions).
+
+(NOTE: it is not advised to cheap out on the battery and charging circuit. Components can be replaced, injuries can be avoided; human lives can't be replaced, and injuries can be life-affecting)
+
+- My setup images: https://imgur.com/a/ubTjM
 
 #### Applicable copyrights:
 
