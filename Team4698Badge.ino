@@ -18,11 +18,113 @@ ESP8266WebServer server(80);
 
 LedMatrix ledMatrix = LedMatrix(NUMBER_OF_DEVICES, CS_PIN);
 
-bool setupBool = false;
+int startupMode = 0;
 static const int EEPROMSize = 256;
 int absDirection;
+int gameChoice = 0;
+// Games:
+// 0: Avoid
 
 // Alright, let's get commenty
+
+// GAMES INITIATING VARS AND FUNCS:
+// 0: Avoid
+
+long lastUpdateMicros;
+
+long TARGET_UPDATE_TIME = 16000;
+long LEVEL_LENGTH = 500; // The amount of pixels before the stage advances to the next level (increasing width)
+
+float playerY;          // Player position in vertical space
+float playerVelocity;   // Player velocity in vertical space
+
+float stagePosition;    // The Player's progress through the stage
+float stageVelocity;    // The speed of the stage (will change)
+
+float obstaclePosition;    // The position of the obstacle on the stage
+int obstacleWidth;        // The size of the obstacle
+
+void avoidUpdate(float delta) {
+  // To be checked if player is dead
+  bool willDie = false;
+  // Was used, is not currently
+  delta = 1;
+
+  // Jumping the player with the given velo
+  playerY += playerVelocity * delta;
+
+  // Moving our stage around
+  stageVelocity = 0.4 + (stagePosition / (LEVEL_LENGTH * 10));
+
+  // More gravity
+  if (playerY > 0) {
+    playerVelocity = (playerVelocity - 0.095) * delta;
+  } else {
+    playerVelocity = 0;
+    playerY = 0;
+  }
+
+  // Sets the STAGE... position to just add the velocity
+  stagePosition += stageVelocity * delta;
+  Serial.print("Stage: ");
+  Serial.print(stagePosition);
+  Serial.print(", ");
+
+  // Begin setting the obstacle position, keep in mind this is now the POSITION ON THE STAGE
+  if (obstaclePosition - stagePosition <= -10)    // -100 is how far off the screen before it resets
+  {
+    // IN THE FUTURE CHANGE THE 0.5s BELOW TO BE RANDOM FLOATS FROM 0.0 - 1.0!
+    obstaclePosition = stagePosition + 20 + ((float)random(0, 100) / 100) * 25;         // 20 is screen size, 100 is how many pixels off the screen it moves to
+    obstacleWidth = 1 + ((float)random(0, 100) / 100) * (1 + stagePosition / LEVEL_LENGTH); // Sets the size of the obstacle to be 1 + progress of player
+    if (obstacleWidth > 6) obstacleWidth = 6;    // Limits the width of the obstacle to six
+
+  }
+  Serial.print("Obstacle: ");
+  Serial.print(obstaclePosition);
+  Serial.print("Obstacle Width: ");
+  Serial.println(obstacleWidth);
+
+  if (obstaclePosition - stagePosition < 20)
+  {
+    for (int x = 0; x < obstacleWidth; x++) {
+      ledMatrix.setPixel(int(round(obstaclePosition - stagePosition - 1)) + x, 6);
+      ledMatrix.setPixel(int(round(obstaclePosition - stagePosition - 1)) + x, 5);
+    }
+
+  }
+
+  // If the player is low enough and inside an obstacle
+  if (playerY < 1.3) {
+    if (obstaclePosition - stagePosition < 0 && obstaclePosition - stagePosition + obstacleWidth > 0) {
+      willDie = true;
+    }
+  }
+
+
+
+  if (willDie) {
+    long finalSeconds = millis() / 1000;
+    ledMatrix.setText("You died! Score: " + String(finalSeconds));
+    while (true) {
+      ledMatrix.clear();
+      ledMatrix.scrollTextLeft();
+      ledMatrix.drawText();
+      ledMatrix.commit();
+      delay(50);
+    }
+  }
+
+  // Draw floor
+  for (int x = 0; x < 16; x++) {
+    ledMatrix.setPixel(x, 7);
+  }
+
+  ledMatrix.setPixel(0, 6 - playerY);
+
+}
+
+
+// MAIN BADGE CODE
 
 
 // This struct is universal in all instances of EEPROM reading in writing in the examples and main sketch
@@ -230,25 +332,38 @@ void returnOK()
 
 // Necessary for the captive portal and in case some idjit goes to the wrong page.
 void handleNotFound() {
-  // So the below commented code works just fine, I just do this to make sure the user gets forced by the captive portal to the main page, or is at least asked to "sign in" by going to that page.
+  // This is to make sure the user gets forced by the captive portal to the main page, or is at least asked to "sign in" by going to that page.
 
   server.send(200, "text/html", INDEX_HTML);
+}
 
+// Ran during setup()
+void setupWiFi() {
+  // boot up our AP
+  WiFi.mode(WIFI_AP);
 
-  /*
-    String message = "File Not Found\n\n";
-    message += "URI: ";
-    message += server.uri();
-    message += "\nMethod: ";
-    message += (server.method() == HTTP_GET) ? "GET" : "POST";
-    message += "\nArguments: ";
-    message += server.args();
-    message += "\n";
-    for (uint8_t i = 0; i < server.args(); i++) {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-    }
-    server.send(404, "text/plain", message);
-  */
+  // Do a very smol amount of work to get a unique-ish name. Append the
+  // last two bytes of the MAC (HEX'd) to "Thing-":
+  const int len = 19;
+  String macID = WiFi.macAddress().substring(len - 8, len);
+  macID.replace(":", "");
+
+  // Get the name/pass ready to be turned into a char Array
+  String AP_NameString = "badge" + macID;
+
+  // kinda ew but it works i guess
+  // not my idea
+  char AP_NameChar[AP_NameString.length() + 1];
+  memset(AP_NameChar, 0, AP_NameString.length() + 1);
+
+  for (int i = 0; i < AP_NameString.length(); i++)
+    AP_NameChar[i] = AP_NameString.charAt(i);
+
+  // Tell our user where to go and what the credentials are
+  ledMatrix.setText("WiFi Name and Pass: " + AP_NameString + "      URL: 192.168.4.1");
+
+  // And our AP should be ready to go.
+  WiFi.softAP(AP_NameChar, AP_NameChar);
 }
 
 // So when our ESP boots
@@ -265,7 +380,12 @@ void setup(void)
 
   // If button B is being held while booting, set the setup flag to true
   if (!digitalRead(D2)) {
-    setupBool = true;
+    startupMode = 1;
+  }
+
+  // But if A is behing held, launch the games!
+  if (!digitalRead(D1)) {
+    startupMode = 2;
   }
 
   // We open up serial
@@ -277,11 +397,11 @@ void setup(void)
   ledMatrix.init();
 
   // Now, if we're setting stuff up...
-  if (setupBool) {
+  if (startupMode == 1) {
     // Turn on onboard LED to indicate setup mode
     pinMode(D4, OUTPUT);
     digitalWrite(D4, LOW);
-    
+
     // Set up our captive portal
     dnsServer.start(DNS_PORT, "*", apIP);
     // The rest of the WiFi booting
@@ -330,39 +450,10 @@ void setup(void)
   }
 }
 
-// Ran during setup()
-void setupWiFi() {
-  // boot up our AP
-  WiFi.mode(WIFI_AP);
-
-  // Do a very smol amount of work to get a unique-ish name. Append the
-  // last two bytes of the MAC (HEX'd) to "Thing-":
-  const int len = 19;
-  String macID = WiFi.macAddress().substring(len - 8, len);
-  macID.replace(":", "");
-
-  // Get the name/pass ready to be turned into a char Array
-  String AP_NameString = "badge" + macID;
-
-  // kinda ew but it works i guess
-  // not my idea
-  char AP_NameChar[AP_NameString.length() + 1];
-  memset(AP_NameChar, 0, AP_NameString.length() + 1);
-
-  for (int i = 0; i < AP_NameString.length(); i++)
-    AP_NameChar[i] = AP_NameString.charAt(i);
-
-  // Tell our user where to go and what the credentials are
-  ledMatrix.setText("WiFi Name and Pass: " + AP_NameString + "      URL: 192.168.4.1");
-
-  // And our AP should be ready to go.
-  WiFi.softAP(AP_NameChar, AP_NameChar);
-}
-
 
 void loop(void)
 {
-  if (setupBool) {
+  if (startupMode == 1) {
     // Letting our DNS and web server work
     dnsServer.processNextRequest();
     server.handleClient();
@@ -378,7 +469,38 @@ void loop(void)
     ledMatrix.commit();
     // This may eventually be changed to a millis() comparison, but in my testing, it works fine.
     delay(50);
-  } else {
+  } else if (startupMode == 2) {
+    if (gameChoice == 0) {
+
+      // The "Avoid" Game!
+      // Basically a very simple copy of Google Chrome's Dino Game.
+
+
+      // Get a new value to be used to seed random values
+      randomSeed(analogRead(A0));
+
+      while (true) {
+        float d = (micros() - lastUpdateMicros) / TARGET_UPDATE_TIME;
+        lastUpdateMicros = micros();
+        ledMatrix.clear();
+        avoidUpdate(d);
+        ledMatrix.commit();
+
+        // Checks if the player is below a certain point so that they may jump again
+        if (!digitalRead(D1)) {
+          if (playerY < 2.5) {
+            playerVelocity += 0.2;
+          }
+        }
+
+        // Create a delay so that the cycle is a little closer to the target time
+        if (d < 0.8) { // 0.8 is arbitrary
+          delayMicroseconds((0.95 * d) * TARGET_UPDATE_TIME); // 0.95 is also arbitrary
+        }
+        delay(20);
+      }
+    }
+  } else if (startupMode == 0) {
     // The while is just so our chip doesn't check a bool that isn't going to change.
     Serial.println(absDirection);
     while (true) {
@@ -389,6 +511,7 @@ void loop(void)
       } else {
         ledMatrix.scrollTextRight();
       }
+      
       ledMatrix.drawText();
       ledMatrix.commit();
       // The user-chosen delay.
