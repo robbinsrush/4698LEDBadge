@@ -10,6 +10,11 @@
 #define NUMBER_OF_DEVICES 2
 #define CS_PIN D8
 
+#define A D1
+#define B D2
+#define L D3
+#define R D4
+
 MDNSResponder mdns;
 const byte DNS_PORT = 53;
 IPAddress apIP(192, 168, 4, 1);
@@ -26,6 +31,11 @@ int gameChoice = 0;
 // 0: Avoid
 
 // Alright, let's get commenty
+
+// Button checking
+bool button(int buttonToCheck) {
+  return !digitalRead(buttonToCheck);
+}
 
 // GAMES INITIATING VARS AND FUNCS:
 // 0: Avoid
@@ -44,13 +54,16 @@ float stageVelocity;    // The speed of the stage (will change)
 float obstaclePosition;    // The position of the obstacle on the stage
 int obstacleWidth;        // The size of the obstacle
 
+long startTime = 0;    // The time the player started the game at.
+long score = 0;           // The player's score.
+
 void avoidUpdate(float delta) {
   // To be checked if player is dead
   bool willDie = false;
   // Was used, is not currently
   delta = 1;
 
-  // Jumping the player with the given velo
+  // Jumping the player with the given velocity.
   playerY += playerVelocity * delta;
 
   // Moving our stage around
@@ -77,10 +90,10 @@ void avoidUpdate(float delta) {
     obstaclePosition = stagePosition + 20 + ((float)random(0, 100) / 100) * 25;         // 20 is screen size, 100 is how many pixels off the screen it moves to
     obstacleWidth = 1 + ((float)random(0, 100) / 100) * (1 + stagePosition / LEVEL_LENGTH); // Sets the size of the obstacle to be 1 + progress of player
     if (obstacleWidth > 6) obstacleWidth = 6;    // Limits the width of the obstacle to six
-
   }
   Serial.print("Obstacle: ");
   Serial.print(obstaclePosition);
+  Serial.print(", ");
   Serial.print("Obstacle Width: ");
   Serial.println(obstacleWidth);
 
@@ -100,17 +113,28 @@ void avoidUpdate(float delta) {
     }
   }
 
-
-
   if (willDie) {
-    long finalSeconds = millis() / 1000;
-    ledMatrix.setText("You died! Score: " + String(finalSeconds));
+    score = (millis() / 1000) - startTime;
+
+    ledMatrix.setText("You died! Score: " + String(score));
+    // Waiting for them to let go of the button before showing the text
     while (true) {
-      ledMatrix.clear();
-      ledMatrix.scrollTextLeft();
-      ledMatrix.drawText();
-      ledMatrix.commit();
-      delay(50);
+      if (!button(A) && !button(B)) {
+        ledMatrix.clear();
+        ledMatrix.scrollTextLeft();
+        ledMatrix.drawText();
+        ledMatrix.commit();
+        delay(50);
+        // If A or B is pressed, reset the game.
+        if (button(A) || button(B)) {
+          stagePosition = 0;
+          obstaclePosition = 25;
+          obstacleWidth = 1;
+          willDie = false;
+          startTime = millis() / 1000;
+          break;
+        }
+      }
     }
   }
 
@@ -379,12 +403,12 @@ void setup(void)
   pinMode(D4, INPUT_PULLUP);
 
   // If button B is being held while booting, set the setup flag to true
-  if (!digitalRead(D2)) {
+  if (button(B)) {
     startupMode = 1;
   }
 
   // But if A is behing held, launch the games!
-  if (!digitalRead(D1)) {
+  if (button(A)) {
     startupMode = 2;
   }
 
@@ -413,7 +437,7 @@ void setup(void)
     server.begin();
 
   } else {
-    // But if we're just being a badge, we turn off WiFi entirely (saves battery and bandwidth around the world.) <3
+    // But if we're just being a badge or running a game, we turn off WiFi entirely (saves battery and bandwidth around the world.) <3
     WiFi.mode(WIFI_OFF);
     // Load settings and check if settings were able to be at the same time
     if (loadSettings()) {
@@ -487,7 +511,7 @@ void loop(void)
         ledMatrix.commit();
 
         // Checks if the player is below a certain point so that they may jump again
-        if (!digitalRead(D1)) {
+        if (button(A)) {
           if (playerY < 2.5) {
             playerVelocity += 0.2;
           }
@@ -511,7 +535,7 @@ void loop(void)
       } else {
         ledMatrix.scrollTextRight();
       }
-      
+
       ledMatrix.drawText();
       ledMatrix.commit();
       // The user-chosen delay.
